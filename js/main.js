@@ -27,9 +27,11 @@ const images = [
     // ''
 ];
 
-const results = [];
-
-
+/**
+ * Fetch image from URL
+ * @param url: String, Image URL
+ * @returns {Promise<any>}
+ */
 const getImage = (url) => {
 
     return new Promise((resolve, reject) => {
@@ -42,82 +44,32 @@ const getImage = (url) => {
             })
         }
 
-        setTimeout(() => {
-            resolve({
-                url: url,
-                date: new Date()
-            })
-        }, 1000)
+        fetch(url).then((res) => {
+            resolve(res);
+        })
 
     })
 };
 
-
-const arrayChunk = (array, size) => Array.from(
-    {length: Math.ceil(array.length / size)},
-    (value, key) => array.slice(key * size, key * size + size)
-);
-
-
 /**
- * Функция на промисах
- * @param arr: array, массив изображений
- * @param resultArray: array, резульирующий массив
+ * Fetching images from arr in N-streams
+ * @param arr: Array, images list
+ * @param streams: Integer, streams
  */
-const fetchImages_1 = (arr, resultArray) => {
-    const imagesArr = arrayChunk(arr, 2);
+const fetchImages = (arr, streams) => {
+    let counter = 0;
 
-    Promise.all(
-        imagesArr.map(stream => {
-            return Promise.all(
-                stream.map(item => {
-                    return getImage(item)
-                })
-            )
-        })
-    ).then(result => {
-    	result.map(item => {
-    	    resultArray.push(...item)
-    	});
+    const getNext = () => {
+        getImage(arr[counter]).then(result => {
+            getNext()
+        }).catch(error => console.log(error));
 
-        console.log(resultArray);  // показываем результирующий массив
+        if (counter < arr.length) counter++;
+    };
 
-    }).catch(error => console.log(error))
+    for (let i = 0; i < streams; i++) {
+        getNext();
+    }
 };
 
-
-/**
- * Функция на асинках
- * @param arr: array, массив изображений
- * @param resultArray: array, резульирующий массив
- * @returns {Promise<void>}
- */
-async function fetchImages_2(arr, resultArray) {
-    const imagesArr = arrayChunk(arr, 2);
-
-    try {
-
-        const result = await Promise.all(
-            imagesArr.map(stream => {
-                return Promise.all(
-                    stream.map(item => {
-                        return getImage(item)
-                    })
-                )
-            })
-        );
-        result.map(item => {
-            resultArray.push(...item)
-        });
-
-        console.log(resultArray);  // показываем результирующий массив
-
-    } catch (error) {
-        console.log(error)
-    }
-}
-
-
-fetchImages_1(images, results);
-
-// fetchImages_2(images, results);
+fetchImages(images, 2);
